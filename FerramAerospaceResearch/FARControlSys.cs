@@ -56,6 +56,8 @@ namespace ferram4
 
         public double MachNumber;
         public double reynoldsNumber;
+        public Vector3d tasVector; // DaMichel: vessel.GetSrfVelocity() - wind
+        public double tasMagnitude; 
 
         private static string mach_str;
 
@@ -301,13 +303,14 @@ namespace ferram4
             double airDemand = 0;
             PartResourceLibrary l = PartResourceLibrary.Instance;
 
-            Vector3 tmpVec = vessel.ReferenceTransform.up * Vector3.Dot(vessel.ReferenceTransform.up, vessel.srf_velocity.normalized) + vessel.ReferenceTransform.forward * Vector3.Dot(vessel.ReferenceTransform.forward, vessel.srf_velocity.normalized);   //velocity vector projected onto a plane that divides the airplane into left and right halves
+            Vector3d tasNormalized = tasVector.normalized; // DaMichel: bit of optimization, and respect wind, too
+            Vector3 tmpVec = vessel.ReferenceTransform.up * Vector3.Dot(vessel.ReferenceTransform.up, tasNormalized) + vessel.ReferenceTransform.forward * Vector3.Dot(vessel.ReferenceTransform.forward, tasNormalized);   //velocity vector projected onto a plane that divides the airplane into left and right halves
             AoA = Vector3.Dot(tmpVec.normalized, vessel.ReferenceTransform.forward);
             AoA = FARMathUtil.rad2deg * Math.Asin(AoA);
             if (double.IsNaN(AoA))
                 AoA = 0;
 
-            tmpVec = vessel.ReferenceTransform.up * Vector3.Dot(vessel.ReferenceTransform.up, vessel.srf_velocity.normalized) + vessel.ReferenceTransform.right * Vector3.Dot(vessel.ReferenceTransform.right, vessel.srf_velocity.normalized);     //velocity vector projected onto the vehicle-horizontal plane
+            tmpVec = vessel.ReferenceTransform.up * Vector3.Dot(vessel.ReferenceTransform.up, tasNormalized) + vessel.ReferenceTransform.right * Vector3.Dot(vessel.ReferenceTransform.right, tasNormalized);     //velocity vector projected onto the vehicle-horizontal plane
             yaw = Vector3.Dot(tmpVec.normalized, vessel.ReferenceTransform.right);
             yaw = FARMathUtil.rad2deg * Math.Asin(yaw);
             if (double.IsNaN(yaw))
@@ -588,7 +591,7 @@ namespace ferram4
 
             GUILayout.BeginVertical();
             double L_D = Cl / Cd;
-            double VL_D = this.vessel.srf_velocity.magnitude * L_D;
+            double VL_D = tasMagnitude * L_D;
             double L_D_TSFC = 0;
             double VL_D_TSFC = 0;
             if (TSFC != 0)
@@ -1268,14 +1271,14 @@ namespace ferram4
                     speedometerCaption = "IAS: ";
                     double densityRatio = (FARAeroUtil.GetCurrentDensity(activeVessel.mainBody, activeVessel.altitude, false) * invKerbinSLDensity);
                     double pressureRatio = FARAeroUtil.StagnationPressureCalc(MachNumber);
-                    UI.speed.text = (activeVessel.srfSpeed * Math.Sqrt(densityRatio) * pressureRatio * unitConversion).ToString("F1") + unitString;
+                    UI.speed.text = (tasMagnitude * Math.Sqrt(densityRatio) * pressureRatio * unitConversion).ToString("F1") + unitString;
                 }
                 else if (velMode == SurfaceVelMode.EAS)
                 {
                     UI.spdCaption.text = "EAS";
                     speedometerCaption = "EAS: ";
                     double densityRatio = (FARAeroUtil.GetCurrentDensity(activeVessel.mainBody, activeVessel.altitude, false) * invKerbinSLDensity);
-                    UI.speed.text = (activeVessel.srfSpeed * Math.Sqrt(densityRatio) * unitConversion).ToString("F1") + unitString;
+                    UI.speed.text = (tasMagnitude * Math.Sqrt(densityRatio) * unitConversion).ToString("F1") + unitString;
                 }
                 else// if (velMode == SurfaceVelMode.MACH)
                 {
@@ -1411,9 +1414,11 @@ namespace ferram4
                             double soundspeed;
                             airDensity = FARAeroUtil.GetCurrentDensity(vessel, out soundspeed, false);
 
-                            //this.vessel.srf_velocity += FARWind.GetWind(this.vessel.mainBody, part, vessel.transform.position);
+                            //DaMichel: respect wind. So replace all vesse.srf_velocity with tasMagnitude. Use tasVector in AoA computation.
+                            tasVector = this.vessel.srf_velocity - FARWind.GetWind(this.vessel.mainBody, part, vessel.transform.position);
+                            tasMagnitude = tasVector.magnitude;
 
-                            MachNumber = this.vessel.srf_velocity.magnitude / soundspeed;
+                            MachNumber = tasMagnitude / soundspeed;
 
                             if (DensityRelative)
                                 airDensity_str = (airDensity * invKerbinSLDensity).ToString("F3");
@@ -1421,7 +1426,7 @@ namespace ferram4
                                 airDensity_str = (airDensity).ToString("F3");
 
 
-                            q = airDensity * vessel.srf_velocity.sqrMagnitude * 0.5;
+                            q = airDensity * tasMagnitude * tasMagnitude * 0.5;
 
                             mach_str = MachNumber.ToString("F3");
                         }
@@ -1430,6 +1435,8 @@ namespace ferram4
                             q = 0;
                             mach_str = "0.000";
                             airDensity_str = "0.000";
+                            tasMagnitude = 0;
+                            tasVector = Vector3d.zero;
                         }
 
                         timeSinceSave++;
