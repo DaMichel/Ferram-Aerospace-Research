@@ -160,11 +160,14 @@ namespace FerramAerospaceResearch.FARAeroComponents
 
             for (int i = 0; i < moduleList.Count; i++)
             {
+                Part p = moduleList[i].part;
+                if (!partWorldToLocalMatrixDict.ContainsKey(p))
+                    continue;
                 var data = new PartData {aeroModule = moduleList[i]};
-                Matrix4x4 transformMatrix = partWorldToLocalMatrixDict[data.aeroModule.part].worldToLocalMatrix;
+                Matrix4x4 transformMatrix = partWorldToLocalMatrixDict[p].worldToLocalMatrix;
 
                 Vector3 forceCenterWorldSpace = centroidLocationAlongxRef +
-                                                Vector3.ProjectOnPlane(partWorldToLocalMatrixDict[data.aeroModule.part]
+                                                Vector3.ProjectOnPlane(partWorldToLocalMatrixDict[p]
                                                                            .worldPosition,
                                                                        worldVehicleAxis) +
                                                 avgPosDiffFromCentroid;
@@ -174,10 +177,10 @@ namespace FerramAerospaceResearch.FARAeroComponents
                 data.nRefVectorPartSpace = transformMatrix.MultiplyVector(nRefVectorWorldSpace);
                 data.dragFactor = dragFactor[i];
 
-                if (i < partData.Count)
-                    partData[i] = data;
-                else
-                    partData.Add(data);
+                //if (i < partData.Count)
+                //    partData[i] = data;
+                //else
+                partData.Add(data);
 
                 handledAeroModulesIndexDict.Add(data.aeroModule, i);
             }
