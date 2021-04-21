@@ -349,7 +349,8 @@ namespace FerramAerospaceResearch.FARGUI.FAREditorGUI
 
         private void Awake()
         {
-            VoxelizationThreadpool.RunInMainThread = Debug.isDebugBuild;
+            var tmp = Threading.MainThread.Instance;
+            VoxelizationThreadpool.RunInMainThread = true; // Debug.isDebugBuild;
             if (FARDebugValues.useBlizzyToolbar)
                 GenerateBlizzyToolbarButton();
         }

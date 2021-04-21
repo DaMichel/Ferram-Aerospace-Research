@@ -72,6 +72,7 @@ namespace FerramAerospaceResearch
         public static int prevBodyIndex = -1;
         public static BodySettings currentBodyData;
         private static CelestialBody currentBody;
+        private static Vector3d currentVesselLocation;
 
         public static bool loaded;
 
@@ -100,8 +101,20 @@ namespace FerramAerospaceResearch
                     currentBody = FlightGlobals.Bodies[1];
                 else
                     currentBody = FlightGlobals.ActiveVessel.mainBody;
-
                 return currentBody;
+            }
+        }
+
+        public static Vector3d CurrentVesselLocation
+        {
+            get
+            {
+                Vessel vessel = FlightGlobals.ActiveVessel;
+                if (vessel != null)
+                {
+                    currentVesselLocation = new Vector3d(vessel.latitude, vessel.longitude, vessel.altitude);
+                }
+                return currentVesselLocation;
             }
         }
 
@@ -109,9 +122,8 @@ namespace FerramAerospaceResearch
         {
             get
             {
-                Vessel vessel = FlightGlobals.ActiveVessel;
                 return FARAtmosphere.GetAdiabaticIndex(CurrentBody,
-                                                       new Vector3d(vessel.latitude, vessel.longitude, vessel.altitude),
+                                                       CurrentVesselLocation,
                                                        Planetarium.GetUniversalTime());
             }
         }

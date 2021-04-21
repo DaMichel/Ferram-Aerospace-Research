@@ -55,7 +55,7 @@ namespace FerramAerospaceResearch.FARThreading
 
         public static readonly VoxelizationThreadpool Instance = new VoxelizationThreadpool();
 
-        public static bool RunInMainThread = false;
+        public static bool RunInMainThread = true;
 
         private readonly Queue<Task> queuedMainThreadTasks;
 

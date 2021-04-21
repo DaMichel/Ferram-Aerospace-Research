@@ -17,7 +17,7 @@ namespace FerramAerospaceResearch.Threading
 
         public static bool IsMainThread
         {
-            get { return Thread == Thread.CurrentThread; }
+            get { CheckStatus(); return Thread == Thread.CurrentThread; }
         }
 
         public static Thread Thread { get; private set; }
